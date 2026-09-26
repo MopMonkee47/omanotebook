@@ -296,8 +296,17 @@ void Backend::printDocument() {
         dialog.windowHandle()->setTransientParent(m_parentWindow);
 
     if (dialog.exec() == QDialog::Accepted) {
+        // The editor document's default font carries a pixel size from the QML
+        // TextArea font.pixelSize. QTextDocument::print renders pixel-sized
+        // fonts in the print device's pixel space, so at a 600dpi printer that
+        // px value collapses to a few points: the whole page prints tiny.
+        // Convert to a point size up front so print output matches the screen.
+        QFont printFont = m_document->defaultFont();
+        if (printFont.pointSizeF() <= 0 && printFont.pixelSize() > 0)
+            printFont.setPointSizeF(printFont.pixelSize() * 72.0 / 96.0);
+
         QTextDocument rendered;
-        rendered.setDefaultFont(m_document->defaultFont());
+        rendered.setDefaultFont(printFont);
         rendered.setMarkdown(currentDocumentText());
         rendered.print(&printer);
     }
